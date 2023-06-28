@@ -40,6 +40,5 @@ services:
 volumes:
   grafana_data:
   grafana_logs:
-  prometheus:
 networks:
   grafanadocker:
