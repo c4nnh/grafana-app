@@ -1,4 +1,9 @@
 version: "3"
+
+networks:
+  monitor-net:
+    driver: bridge
+
 services:
   prometheus:
     image: prom/prometheus
@@ -11,11 +16,13 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--web.listen-address=:9080"
       - "--web.enable-admin-api"
+    expose:
+      - 9080
     networks:
-      - grafanadocker
+      - monitor-net
   grafana:
     container_name: grafana
-    image: grafana/grafana
+    image: grafana/grafana-enterprise
     ports:
       - 3000:3000
     volumes:
@@ -23,8 +30,10 @@ services:
       - grafana_logs:/var/log/grafana
     depends_on:
       - prometheus
+    expose:
+      - 3000
     networks:
-      - grafanadocker
+      - monitor-net
   remix-app:
     container_name: grafana-remix-app
     image: grafana-remix-app:latest
@@ -35,10 +44,10 @@ services:
       - 8080:8080
     depends_on:
       - grafana
+    expose:
+      - 8080
     networks:
-      - grafanadocker
+      - monitor-net
 volumes:
   grafana_data:
   grafana_logs:
-networks:
-  grafanadocker:
