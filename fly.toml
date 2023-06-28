@@ -11,6 +11,9 @@ processes = []
 
 [build]
 
+[docker]
+  context = "./fly"
+
 [env]
   PORT = "8080"
 

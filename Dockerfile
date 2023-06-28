@@ -1,44 +1,12 @@
-# syntax = docker/dockerfile:1
+FROM node:16
 
-# Adjust NODE_VERSION as desired
-ARG NODE_VERSION=16.20.0
-FROM node:${NODE_VERSION}-slim as base
-
-LABEL fly_launch_runtime="Remix"
-
-# Remix app lives here
 WORKDIR /app
 
-# Set production environment
-ENV NODE_ENV=production
-RUN apt-get update && apt-get install -y openssl
+COPY package.json pnpm-lock.yaml ./
+RUN npm install
 
-# Throw-away build stage to reduce size of final image
-FROM base as build
+COPY . .
 
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install -y python3-pip pkg-config build-essential openssl 
-
-# Install node modules
-COPY --link package.json .
-RUN npm install --production=false
-
-# Copy application code
-COPY --link . .
-
-# Build application
 RUN npm run build
 
-# Remove development dependencies
-RUN npm prune --production
-
-
-# Final stage for app image
-FROM base
-
-# Copy built application
-COPY --from=build /app /app
-
-# Start the server by default, this can be overwritten at runtime
-CMD [ "npm", "run", "start" ]
+CMD ["npm", "start"]
