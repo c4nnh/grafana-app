@@ -5,35 +5,35 @@ networks:
     driver: bridge
 
 services:
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    ports:
-      - 9080:9080
-    volumes:
-      - ./prometheus:/etc/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--web.listen-address=:9080"
-      - "--web.enable-admin-api"
-    expose:
-      - 9080
-    networks:
-      - monitor-net
-  grafana:
-    container_name: grafana
-    image: grafana/grafana-enterprise
-    ports:
-      - 3000:3000
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - grafana_logs:/var/log/grafana
-    depends_on:
-      - prometheus
-    expose:
-      - 3000
-    networks:
-      - monitor-net
+  # prometheus:
+  #   image: prom/prometheus
+  #   container_name: prometheus
+  #   ports:
+  #     - 9080:9080
+  #   volumes:
+  #     - ./prometheus:/etc/prometheus
+  #   command:
+  #     - "--config.file=/etc/prometheus/prometheus.yml"
+  #     - "--web.listen-address=:9080"
+  #     - "--web.enable-admin-api"
+  #   expose:
+  #     - 9080
+  #   networks:
+  #     - monitor-net
+  # grafana:
+  #   container_name: grafana
+  #   image: grafana/grafana-enterprise
+  #   ports:
+  #     - 3000:3000
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - grafana_logs:/var/log/grafana
+  #   # depends_on:
+  #   #   - prometheus
+  #   expose:
+  #     - 3000
+  #   networks:
+  #     - monitor-net
   remix-app:
     container_name: grafana-remix-app
     image: grafana-remix-app:latest
@@ -41,13 +41,13 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 8080:8080
-    depends_on:
-      - grafana
-    expose:
-      - 8080
-    networks:
-      - monitor-net
-volumes:
-  grafana_data:
-  grafana_logs:
+      - 3000:3000
+  # depends_on:
+  #   - grafana
+  # expose:
+  #   - 8080
+  # networks:
+  #   - monitor-net
+# volumes:
+#   grafana_data:
+#   grafana_logs:

@@ -1,9 +1,4 @@
-const {
-  collectDefaultMetrics,
-  register,
-  Histogram,
-  Counter,
-} = require("prom-client");
+const { collectDefaultMetrics, register } = require("prom-client");
 const path = require("path");
 
 const { createRequestHandler } = require("@remix-run/express");
@@ -11,14 +6,22 @@ const { installGlobals } = require("@remix-run/node");
 const compression = require("compression");
 const express = require("express");
 const morgan = require("morgan");
-const responseTime = require("response-time");
+const {
+  cpuUsageMetricMiddleware,
+  memoryUsageMetricMiddleware,
+  responseTimeMetricMiddleware,
+  requestCountMetricMiddleware,
+  requestSizeMetricMiddleware,
+  requestPayloadSizeMetricMiddleware,
+  requestRateMetricMiddleware,
+  requestThroughputMetricMiddleware,
+} = require("./metrics");
 
 collectDefaultMetrics();
 
 installGlobals();
 
 const BUILD_DIR = path.join(process.cwd(), "build");
-
 const app = express();
 
 app.use(compression());
@@ -32,64 +35,35 @@ app.use(
   express.static("public/build", { immutable: true, maxAge: "1y" })
 );
 
-const restResponseTimeHistorgram = new Histogram({
-  name: "rest_response_time_duration_seconds",
-  help: "REST API response time in secords",
-  labelNames: ["method", "route", "status_code"],
-});
+// Metrics
+app.use(cpuUsageMetricMiddleware);
+app.use(memoryUsageMetricMiddleware);
+app.use(responseTimeMetricMiddleware);
+app.use(requestCountMetricMiddleware);
+app.use(requestSizeMetricMiddleware);
+app.use(requestPayloadSizeMetricMiddleware);
+app.use(requestRateMetricMiddleware);
+app.use(requestThroughputMetricMiddleware);
 
-const cpuUsageMetric = new Counter({
-  name: "node_cpu_usage",
-  help: "CPU usage per request",
-  labelNames: ["method", "path"],
-  registers: [register],
-});
-
-const memoryUsageMetric = new Counter({
-  name: "node_memory_usage",
-  help: "Memory usage per request",
-  labelNames: ["method", "path"],
-  registers: [register],
-});
-
-app.use(
-  responseTime((req, res, time) => {
-    if (req?.route?.path) {
-      restResponseTimeHistorgram.observe(
-        {
-          method: req.method,
-          route: req.route.path,
-          status_code: req.statusCode,
-        },
-        time * 1000
-      );
-    }
-  })
-);
-
-app.use((req, res, next) => {
-  const startCpuUsage = process.cpuUsage();
-  const memoryUsage = process.memoryUsage().rss;
-
-  res.on("finish", () => {
-    const endCpuUsage = process.cpuUsage(startCpuUsage);
-    const cpuUsageMicros = endCpuUsage.user + endCpuUsage.system;
-
-    // Increment the CPU usage metric
-    cpuUsageMetric.labels(req.method, req.path).inc(cpuUsageMicros);
-    memoryUsageMetric.labels(req.method, req.path).inc(memoryUsage);
-  });
-
-  next();
+app.get("/error", async (_req, res) => {
+  res.status(500).json({ error: "An error occurred" });
 });
 
 app.get("/fast", async (_req, res) => {
+  const isError = Math.round(Math.random());
+  if (isError) {
+    return res.status(500).json({ error: "An error occurred" });
+  }
   await new Promise((resolve) => setTimeout(resolve, 300));
   res.send("Fast API");
 });
 
 app.get("/slow", async (_req, res) => {
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  const isError = Math.round(Math.random());
+  if (isError) {
+    return res.status(500).json({ error: "An error occurred" });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 2500));
   res.send("Slow API");
 });
 
@@ -124,7 +98,7 @@ app.all(
         mode: process.env.NODE_ENV,
       })
 );
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
   console.log(`Express server listening on port ${port}`);
