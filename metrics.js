@@ -66,7 +66,6 @@ const httpRequestCountMetric = new Counter({
 
 function requestCountMetricMiddleware(req, res, next) {
   res.on("finish", () => {
-    console.log(res.statusCode);
     httpRequestCountMetric.labels(req.method, req.path, res.statusCode).inc();
   });
 
